@@ -26,6 +26,29 @@ import { IS_FIREFOX, IS_MAC, IS_IE } from '../constants/environment'
 
 const debug = Debug('slate:content')
 
+// eslint-disable-next-line 
+function logEvent(listener, { nativeEvent: event }) {
+  const innerHTML = event.target.innerHTML
+  if (innerHTML != null) {
+    // eslint-disable-next-line 
+    console.log(JSON.stringify(innerHTML))
+  }
+  // eslint-disable-next-line 
+  console.log(event)
+  const selection = window.getSelection()
+  // eslint-disable-next-line 
+  console.table([{
+    listener,
+    type: event.type,
+    data: event.data,
+    selection: `${selection.anchorOffset}, ${selection.focusOffset}`,
+    inputType: event.inputType,
+    key: event.key,
+    keyCode: event.keyCode,
+  }], ['listener', 'type', 'data', 'selection', 'inputType', 'key', 'keyCode'])
+}
+
+
 /**
  * Content.
  *
