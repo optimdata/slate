@@ -22,6 +22,7 @@ import RTL from './rtl'
 import ReadOnly from './read-only'
 import RichText from './rich-text'
 import Tables from './tables'
+import Mobile from './mobile'
 
 import DevLargeDocument from './dev/large-document'
 import DevPerformancePlain from './dev/performance-plain'
@@ -61,6 +62,7 @@ const EXAMPLES = [
   ['Iframes', Iframes, '/iframes'],
   ['Focus & Blur', FocusBlur, '/focus-blur'],
   ['Forced Layout', ForcedLayout, '/forced-layout'],
+  ['Mobile', Mobile, '/mobile'],
 
   ['DEV:Large', DevLargeDocument, '/dev-large', true],
   ['DEV:Plain', DevPerformancePlain, '/dev-performance-plain', true],
