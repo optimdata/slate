@@ -172,8 +172,8 @@ export default class EventLogger extends React.Component {
         <RichText logger={this} />
         <SimpleEditable logger={this} />
         <button onClick={this.reset}>Reset</button>
-        <button onClick={this.toggleTable}>Toggle debug table</button>
-        <button onClick={this.toggleOnlyLast}>Toggle only last row</button>
+        <button onClick={this.toggleTable}>{ this.state.showTable ? 'Hide table' : 'Show table' }</button>
+        <button onClick={this.toggleOnlyLast}>{ this.state.onlyLast ? 'Show all rows' : 'Show only last rows' }</button>
         {
           !this.state.showTable ? null :
             <DebugTable data={this.data} onlyLast={this.state.onlyLast} />
@@ -196,7 +196,7 @@ function DebugTable({ data, onlyLast }) {
           <th>Type</th>
           <th>Data</th>
           <th colSpan={2}>Content</th>
-          <th colSpan={2}>Selection</th>
+          <th colSpan={3}>Selection</th>
           <th colSpan={2}>Key</th>
         </tr>
         <tr>
@@ -214,6 +214,7 @@ function DebugTable({ data, onlyLast }) {
           <th />
           <th>Render</th>
           <th>Raw</th>
+          <th>Range</th>
           <th>Start</th>
           <th>End</th>
           <th>Name</th>
@@ -233,7 +234,7 @@ function DebugRow({ item }) {
   return (
     listener === 'onUpdate' ?
       (
-        <tr><td className="stateChange" colSpan={18}>State change</td></tr>
+        <tr><td className="stateChange" colSpan={19}>State change</td></tr>
       ) : (
         <tr>
           <td className={listener === 'onCompositionStart' ? 'yes' : 'no'} />
@@ -254,6 +255,7 @@ function DebugRow({ item }) {
             { !text ? null : text.slice(selection.end) }
           </td>
           <td><pre>{ html }</pre></td>
+          <td className={selection.begin != selection.end ? 'yes' : 'no'} />
           <td>{ selection.begin }</td>
           <td>{ selection.end }</td>
           <td>{ key }</td>
