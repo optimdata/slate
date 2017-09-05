@@ -7612,8 +7612,9 @@ var Content = function (_React$Component) {
         onBeforeInput: this.onBeforeInput,
         onBlur: this.onBlur,
         onFocus: this.onFocus,
-        onCompositionEnd: this.onCompositionEnd,
         onCompositionStart: this.onCompositionStart,
+        onCompositionUpdate: this.onCompositionUpdate,
+        onCompositionEnd: this.onCompositionEnd,
         onCopy: this.onCopy,
         onCut: this.onCut,
         onDragEnd: this.onDragEnd,
@@ -7817,6 +7818,7 @@ var _initialiseProps = function _initialiseProps() {
   };
 
   this.onBeforeInput = function (event) {
+    if (_this3.tmp.isComposing) return;
     if (_this3.props.readOnly) return;
     if (!_this3.isInEditor(event.target)) return;
 
@@ -7863,6 +7865,7 @@ var _initialiseProps = function _initialiseProps() {
   };
 
   this.onChange = function (state) {
+    if (_this3.tmp.isComposing) return;
     debug('onChange', state);
     _this3.props.onChange(state);
   };
@@ -7871,24 +7874,32 @@ var _initialiseProps = function _initialiseProps() {
     if (!_this3.isInEditor(event.target)) return;
 
     _this3.tmp.isComposing = true;
-    _this3.tmp.compositions++;
+    // this.tmp.compositions++
 
     debug('onCompositionStart', { event: event });
+  };
+
+  this.onCompositionUpdate = function (event) {
+    var data = {
+      isNative: true
+    };
+    _this3.props.onBeforeInput(event, data);
   };
 
   this.onCompositionEnd = function (event) {
     if (!_this3.isInEditor(event.target)) return;
 
-    _this3.tmp.forces++;
-    var count = _this3.tmp.compositions;
+    _this3.tmp.isComposing = false;
+    // this.tmp.forces++
+    // const count = this.tmp.compositions
 
-    // The `count` check here ensures that if another composition starts
-    // before the timeout has closed out this one, we will abort unsetting the
-    // `isComposing` flag, since a composition in still in affect.
-    setTimeout(function () {
-      if (_this3.tmp.compositions > count) return;
-      _this3.tmp.isComposing = false;
-    });
+    // // The `count` check here ensures that if another composition starts
+    // // before the timeout has closed out this one, we will abort unsetting the
+    // // `isComposing` flag, since a composition in still in affect.
+    // setTimeout(() => {
+    //   if (this.tmp.compositions > count) return
+    //   this.tmp.isComposing = false
+    // })
 
     debug('onCompositionEnd', { event: event });
   };
@@ -8038,7 +8049,7 @@ var _initialiseProps = function _initialiseProps() {
   };
 
   this.onInput = function (event) {
-    if (_this3.tmp.isComposing) return;
+    // if (this.tmp.isComposing) return
     if (_this3.props.state.isBlurred) return;
     if (!_this3.isInEditor(event.target)) return;
     debug('onInput', { event: event });
@@ -16932,7 +16943,7 @@ function Plugin() {
     // is not at the edge of an inline node, the cursor isn't at the starting
     // edge of a text node after an inline node, and the natively inserted
     // characters would be the same as the non-native.
-    var isNative =
+    var isNative = data.isNative ||
     // If the selection is expanded, we don't know what the edit will look
     // like so we can't let it happen natively.
     state.isCollapsed &&
