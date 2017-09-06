@@ -4731,6 +4731,8 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var _ = require('../..');
 
 var _react = require('react');
@@ -4806,6 +4808,18 @@ var schema = {
         props.attributes,
         props.children
       );
+    },
+    'reference': function reference(props) {
+      return _react2.default.createElement(
+        'span',
+        _extends({}, props.attributes, {
+          style: {
+            backgroundColor: '#40BCFF',
+            padding: 2
+          }
+        }),
+        'Reference'
+      );
     }
   },
   marks: {
@@ -4844,25 +4858,41 @@ var SimpleEditable = function (_React$Component) {
     return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_ref = SimpleEditable.__proto__ || Object.getPrototypeOf(SimpleEditable)).call.apply(_ref, [this].concat(args))), _this), _this.shouldComponentUpdate = function () {
       return false;
     }, _this.render = function () {
-      return _react2.default.createElement('div', {
-        contentEditable: true,
-        onSelect: _this.props.logger.logEvent('onSelect'),
-        onBeforeInput: _this.props.logger.logEvent('onBeforeInput'),
-        onInput: _this.props.logger.logEvent('onInput'),
-        onCompositionStart: _this.props.logger.logEvent('onCompositionStart'),
-        onCompositionUpdate: _this.props.logger.logEvent('onCompositionUpdate'),
-        onCompositionEnd: _this.props.logger.logEvent('onCompositionEnd'),
-        onChange: _this.props.logger.logEvent('onChange'),
-        onKeyDown: _this.props.logger.logEvent('onKeyDown'),
-        onKeyUp: _this.props.logger.logEvent('onKeyUp'),
-        onBlur: _this.props.logger.logEvent('onBlur'),
-        onFocus: _this.props.logger.logEvent('onFocus'),
-        style: {
-          backgroundColor: 'gold',
-          padding: '1em',
-          margin: '1em 0'
-        }
-      });
+      return _react2.default.createElement(
+        'div',
+        {
+          contentEditable: true,
+          onSelect: _this.props.logger.logEvent('onSelect'),
+          onBeforeInput: _this.props.logger.logEvent('onBeforeInput'),
+          onInput: _this.props.logger.logEvent('onInput'),
+          onCompositionStart: _this.props.logger.logEvent('onCompositionStart'),
+          onCompositionUpdate: _this.props.logger.logEvent('onCompositionUpdate'),
+          onCompositionEnd: _this.props.logger.logEvent('onCompositionEnd'),
+          onChange: _this.props.logger.logEvent('onChange'),
+          onKeyDown: _this.props.logger.logEvent('onKeyDown'),
+          onKeyUp: _this.props.logger.logEvent('onKeyUp'),
+          onBlur: _this.props.logger.logEvent('onBlur'),
+          onFocus: _this.props.logger.logEvent('onFocus'),
+          style: {
+            border: '1px solid black',
+            padding: '1em',
+            margin: '1em 0'
+          }
+        },
+        'This is a reference: ',
+        _react2.default.createElement(
+          'span',
+          {
+            contentEditable: false,
+            style: {
+              backgroundColor: '#40BCFF',
+              padding: 2
+            }
+          },
+          'Reference'
+        ),
+        ' '
+      );
     }, _temp), _possibleConstructorReturn(_this, _ret);
   }
 
@@ -4933,13 +4963,18 @@ var EventLogger = function (_React$Component2) {
     }, _this2.render = function () {
       return _react2.default.createElement(
         'div',
-        { className: 'editor' },
+        null,
         _react2.default.createElement(
           'style',
           { type: 'text/css' },
           '\n          .example {\n            max-width: none;\n          }\n\n          td {\n            min-width: 40px;\n            height: 60px;\n            padding: 5px;\n          }\n\n          span.selection {\n            border: 1px solid orange;\n            backgroundColor: rgba(255, 227, 174, 0.5);\n            padding: 1px;\n          }\n\n          td.yes {\n            background-color: #629DC6;\n          }\n\n          td.stateChange {\n            height: 5px;\n            padding: 1px;\n            background-color: #FB9E4F;\n            text-align: center;\n            font-size: 10px;\n          }\n\n          td.no-alternate {\n            background-color: #DAF1F7;\n          }\n\n          td.no {\n\n          }\n        '
         ),
         _react2.default.createElement(RichText, { logger: _this2 }),
+        _react2.default.createElement(
+          'h4',
+          null,
+          'HTML editor'
+        ),
         _react2.default.createElement(SimpleEditable, { logger: _this2 }),
         _react2.default.createElement(
           'button',
@@ -5255,6 +5290,8 @@ var RichText = function (_React$Component3) {
       });
     }, _this3.onChange = function (state) {
       _this3.props.logger.logStateUpdate(state);
+      window.editorState = state;
+      // console.log('state.startBlock', state.startText.toJS(), state.endText.toJS());
       _this3.setState({ state: state });
     }, _this3.onKeyDown = function (e, data, state) {
       if (!data.isMod) return;
@@ -5383,7 +5420,8 @@ var RichText = function (_React$Component3) {
       );
     }, _this3.renderEditor = function () {
       var style = {
-        padding: '1em'
+        padding: '1em',
+        border: '1px solid black'
       };
       var logEvent = _this3.props.logger.logEvent;
 
@@ -5504,10 +5542,24 @@ module.exports={
           "kind": "text",
           "ranges": [
             {
-              "text": ""
+              "text": "This is a reference: "
             }
           ]
-        }
+        },
+        {
+          "kind": "inline",
+          "isVoid": true,
+          "type": "reference",
+          "data": {}
+        },
+        {
+          "kind": "text",
+          "ranges": [
+            {
+              "text": " "
+            }
+          ]
+        },
       ]
     }
   ]
@@ -7483,6 +7535,12 @@ var Content = function (_React$Component) {
    */
 
   /**
+   * On composition update, keep the editor state in sync without re-rendering.
+   *
+   * @param {Event} event
+   */
+
+  /**
    * On composition end, remove the `isComposing` flag on the next tick. Also
    * increment the `forces` key, which will force the contenteditable element
    * to completely re-render, since IME puts React in an unreconcilable state.
@@ -7777,6 +7835,12 @@ var _initialiseProps = function _initialiseProps() {
 
     var anchorSpan = _this3.element.querySelector('[data-offset-key="' + anchorKey + '-' + anchorIndex + '"]');
     var focusSpan = _this3.element.querySelector('[data-offset-key="' + focusKey + '-' + focusIndex + '"]');
+
+    if (anchorSpan == null || focusSpan == null) {
+      _this3.element.focus();
+      return;
+    }
+
     var anchorEl = (0, _findDeepestNode2.default)(anchorSpan);
     var focusEl = (0, _findDeepestNode2.default)(focusSpan);
 
@@ -7818,17 +7882,25 @@ var _initialiseProps = function _initialiseProps() {
   };
 
   this.onBeforeInput = function (event) {
+    console.log('onBeforeInput');
     if (_this3.tmp.isComposing) return;
     if (_this3.props.readOnly) return;
     if (!_this3.isInEditor(event.target)) return;
 
-    var data = {};
+    var data = {
+      isProcessingKeyInput: _this3.tmp.isProcessingKeyInput
+    };
 
     debug('onBeforeInput', { event: event, data: data });
     _this3.props.onBeforeInput(event, data);
+
+    if (_this3.tmp.isProcessingKeyInput) {
+      _this3.tmp.isProcessingKeyInput = false;
+    }
   };
 
   this.onBlur = function (event) {
+    console.log('onBlur');
     if (_this3.props.readOnly) return;
     if (_this3.tmp.isCopying) return;
     if (!_this3.isInEditor(event.target)) return;
@@ -7871,6 +7943,7 @@ var _initialiseProps = function _initialiseProps() {
   };
 
   this.onCompositionStart = function (event) {
+    console.log('onCompositionStart');
     if (!_this3.isInEditor(event.target)) return;
 
     _this3.tmp.isComposing = true;
@@ -7880,13 +7953,18 @@ var _initialiseProps = function _initialiseProps() {
   };
 
   this.onCompositionUpdate = function (event) {
+    console.log('onCompositionUpdate');
     var data = {
       isNative: true
     };
     _this3.props.onBeforeInput(event, data);
+    if (_this3.tmp.isProcessingKeyInput) {
+      _this3.tmp.isProcessingKeyInput = false;
+    }
   };
 
   this.onCompositionEnd = function (event) {
+    console.log('onCompositionEnd');
     if (!_this3.isInEditor(event.target)) return;
 
     _this3.tmp.isComposing = false;
@@ -8049,6 +8127,7 @@ var _initialiseProps = function _initialiseProps() {
   };
 
   this.onInput = function (event) {
+    console.log('onInput');
     // if (this.tmp.isComposing) return
     if (_this3.props.state.isBlurred) return;
     if (!_this3.isInEditor(event.target)) return;
@@ -8066,7 +8145,15 @@ var _initialiseProps = function _initialiseProps() {
         anchorOffset = native.anchorOffset;
 
     var point = (0, _getPoint2.default)(anchorNode, anchorOffset, state, editor);
-    if (!point) return;
+    // If still processing key input, it means that a deletion occured
+    if (!point) {
+      if (_this3.tmp.isProcessingKeyInput) {
+        console.log('isProcessingKeyInput');
+        var _next = state.transform().deleteBackward().apply();
+        _this3.onChange(_next);
+      }
+      return;
+    }
 
     // Get the range in question.
     var key = point.key,
@@ -8104,6 +8191,14 @@ var _initialiseProps = function _initialiseProps() {
 
     if (textContent == text) return;
 
+    // If still processing key input, it means that a deletion occured
+    if (_this3.tmp.isProcessingKeyInput) {
+      console.log('isProcessingKeyInput');
+      var _next2 = state.transform().deleteBackward().apply();
+      _this3.onChange(_next2);
+      return;
+    }
+
     // Determine what the selection should be after changing the text.
     var delta = textContent.length - text.length;
     var after = selection.collapseToEnd().move(delta);
@@ -8121,6 +8216,7 @@ var _initialiseProps = function _initialiseProps() {
   };
 
   this.onKeyDown = function (event) {
+    console.log('onKeyDown');
     if (_this3.props.readOnly) return;
     if (!_this3.isInEditor(event.target)) return;
 
@@ -8129,6 +8225,8 @@ var _initialiseProps = function _initialiseProps() {
         metaKey = event.metaKey,
         shiftKey = event.shiftKey,
         which = event.which;
+
+    // const key = which === 229 && !this.tmp.isComposing ? 'backspace' : keycode(which)
 
     var key = (0, _keycode2.default)(which);
     var data = {};
@@ -8145,6 +8243,13 @@ var _initialiseProps = function _initialiseProps() {
     // selection-moving behavior.
     if (_this3.tmp.isComposing && (key == 'left' || key == 'right' || key == 'up' || key == 'down')) {
       event.preventDefault();
+      return;
+    }
+
+    // When an IME occurs, the key code is 229 and should be ignored until
+    // onBeforeInput and onInput handlers are called.
+    if (which == 229) {
+      _this3.tmp.isProcessingKeyInput = true;
       return;
     }
 
@@ -8172,6 +8277,7 @@ var _initialiseProps = function _initialiseProps() {
   };
 
   this.onKeyUp = function (event) {
+    console.log('onKeyUp');
     var altKey = event.altKey,
         ctrlKey = event.ctrlKey,
         metaKey = event.metaKey,
@@ -8180,6 +8286,10 @@ var _initialiseProps = function _initialiseProps() {
 
     var key = (0, _keycode2.default)(which);
     var data = {};
+
+    if (_this3.tmp.isProcessingKeyInput) {
+      _this3.tmp.isProcessingKeyInput = false;
+    }
 
     if (key == 'shift') {
       _this3.tmp.isShifting = false;
@@ -8230,6 +8340,7 @@ var _initialiseProps = function _initialiseProps() {
   };
 
   this.onSelect = function (event) {
+    console.log('onSelect');
     if (_this3.props.readOnly) return;
     if (_this3.tmp.isCopying) return;
     if (_this3.tmp.isComposing) return;
@@ -8299,9 +8410,9 @@ var _initialiseProps = function _initialiseProps() {
 
         if (focusInline && !focusInline.isVoid && focus.offset == focusText.length) {
           var _block = document.getClosestBlock(focus.key);
-          var _next = _block.getNextText(focus.key);
-          if (_next) {
-            properties.focusKey = _next.key;
+          var _next3 = _block.getNextText(focus.key);
+          if (_next3) {
+            properties.focusKey = _next3.key;
             properties.focusOffset = 0;
           }
         }
@@ -16919,6 +17030,8 @@ function Plugin() {
 
     var anchorPoint = (0, _getPoint2.default)(anchorNode, anchorOffset, state, editor);
     var focusPoint = (0, _getPoint2.default)(focusNode, focusOffset, state, editor);
+    console.log('anchorNode, anchorOffset', anchorNode, anchorOffset);
+    console.log('anchorPoint, focusPoint, state.selection', anchorPoint, focusPoint, state.selection.toJS());
     if (anchorPoint && focusPoint) {
       var selection = state.selection;
 
@@ -16933,7 +17046,7 @@ function Plugin() {
     }
 
     // Determine what the characters should be, if not natively inserted.
-    var next = transform.insertText(e.data).apply();
+    var next = transform.insertText(e.data || '').apply();
 
     var nextText = next.startText;
     var nextChars = nextText.getDecorations(decorators);

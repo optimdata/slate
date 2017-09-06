@@ -23,6 +23,17 @@ const schema = {
     'heading-two': props => <h2 {...props.attributes}>{props.children}</h2>,
     'list-item': props => <li {...props.attributes}>{props.children}</li>,
     'numbered-list': props => <ol {...props.attributes}>{props.children}</ol>,
+    'reference': props => (
+      <span
+        {...props.attributes}
+        style={{
+          backgroundColor: '#40BCFF',
+          padding: 2,
+        }}
+      >
+        Reference
+      </span>
+    )
   },
   marks: {
     bold: {
@@ -62,11 +73,23 @@ class SimpleEditable extends React.Component {
       onBlur={this.props.logger.logEvent('onBlur')}
       onFocus={this.props.logger.logEvent('onFocus')}
       style={{
-        backgroundColor: 'gold',
+        border: '1px solid black',
         padding: '1em',
         margin: '1em 0',
       }}
-    />
+    >
+      {'This is a reference: '}
+      <span
+        contentEditable={false}
+        style={{
+          backgroundColor: '#40BCFF',
+          padding: 2,
+        }}
+      >
+        Reference
+      </span>
+      {' '}
+    </div>
   )
 
 }
@@ -131,7 +154,7 @@ export default class EventLogger extends React.Component {
 
   render = () => {
     return (
-      <div className="editor">
+      <div>
         <style type="text/css">{`
           .example {
             max-width: none;
@@ -170,6 +193,7 @@ export default class EventLogger extends React.Component {
           }
         `}</style>
         <RichText logger={this} />
+        <h4>HTML editor</h4>
         <SimpleEditable logger={this} />
         <button onClick={this.reset}>Reset</button>
         <button onClick={this.toggleTable}>{ this.state.showTable ? 'Hide table' : 'Show table' }</button>
@@ -316,6 +340,8 @@ class RichText extends React.Component {
 
   onChange = (state) => {
     this.props.logger.logStateUpdate(state)
+    window.editorState = state
+    // console.log('state.startBlock', state.startText.toJS(), state.endText.toJS());
     this.setState({ state })
   }
 
@@ -519,6 +545,7 @@ class RichText extends React.Component {
   renderEditor = () => {
     const style = {
       padding: '1em',
+      border: '1px solid black',
     }
     const { logger: { logEvent }} = this.props
     return (
