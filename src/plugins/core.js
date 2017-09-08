@@ -131,7 +131,7 @@ function Plugin(options = {}) {
 
     // Determine what the characters should be, if not natively inserted.
     let next = transform
-      .insertText(e.data)
+      .insertText(e.data || '')
       .apply()
 
     const nextText = next.startText
@@ -143,6 +143,7 @@ function Plugin(options = {}) {
     // edge of a text node after an inline node, and the natively inserted
     // characters would be the same as the non-native.
     const isNative = (
+      data.isNative ||
       // If the selection is expanded, we don't know what the edit will look
       // like so we can't let it happen natively.
       (state.isCollapsed) &&

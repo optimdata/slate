@@ -222,6 +222,12 @@ class Content extends React.Component {
 
     const anchorSpan = this.element.querySelector(`[data-offset-key="${anchorKey}-${anchorIndex}"]`)
     const focusSpan = this.element.querySelector(`[data-offset-key="${focusKey}-${focusIndex}"]`)
+
+    if (anchorSpan == null || focusSpan == null) {
+      this.element.focus()
+      return
+    }
+
     const anchorEl = findDeepestNode(anchorSpan)
     const focusEl = findDeepestNode(focusSpan)
 
@@ -291,13 +297,20 @@ class Content extends React.Component {
    */
 
   onBeforeInput = (event) => {
+    if (this.tmp.isComposing) return
     if (this.props.readOnly) return
     if (!this.isInEditor(event.target)) return
 
-    const data = {}
+    const data = {
+      isProcessingKeyInput: this.tmp.isProcessingKeyInput
+    }
 
     debug('onBeforeInput', { event, data })
     this.props.onBeforeInput(event, data)
+
+    if (this.tmp.isProcessingKeyInput) {
+      this.tmp.isProcessingKeyInput = false
+    }
   }
 
   /**
@@ -355,6 +368,7 @@ class Content extends React.Component {
    */
 
   onChange = (state) => {
+    if (this.tmp.isComposing) return
     debug('onChange', state)
     this.props.onChange(state)
   }
@@ -369,9 +383,25 @@ class Content extends React.Component {
     if (!this.isInEditor(event.target)) return
 
     this.tmp.isComposing = true
-    this.tmp.compositions++
+    // this.tmp.compositions++
 
     debug('onCompositionStart', { event })
+  }
+
+  /**
+   * On composition update, keep the editor state in sync without re-rendering.
+   *
+   * @param {Event} event
+   */
+
+  onCompositionUpdate = (event) => {
+    const data = {
+      isNative: true,
+    }
+    this.props.onBeforeInput(event, data)
+    if (this.tmp.isProcessingKeyInput) {
+      this.tmp.isProcessingKeyInput = false
+    }
   }
 
   /**
@@ -385,16 +415,17 @@ class Content extends React.Component {
   onCompositionEnd = (event) => {
     if (!this.isInEditor(event.target)) return
 
-    this.tmp.forces++
-    const count = this.tmp.compositions
+    this.tmp.isComposing = false
+    // this.tmp.forces++
+    // const count = this.tmp.compositions
 
-    // The `count` check here ensures that if another composition starts
-    // before the timeout has closed out this one, we will abort unsetting the
-    // `isComposing` flag, since a composition in still in affect.
-    setTimeout(() => {
-      if (this.tmp.compositions > count) return
-      this.tmp.isComposing = false
-    })
+    // // The `count` check here ensures that if another composition starts
+    // // before the timeout has closed out this one, we will abort unsetting the
+    // // `isComposing` flag, since a composition in still in affect.
+    // setTimeout(() => {
+    //   if (this.tmp.compositions > count) return
+    //   this.tmp.isComposing = false
+    // })
 
     debug('onCompositionEnd', { event })
   }
@@ -575,7 +606,7 @@ class Content extends React.Component {
    */
 
   onInput = (event) => {
-    if (this.tmp.isComposing) return
+    // if (this.tmp.isComposing) return
     if (this.props.state.isBlurred) return
     if (!this.isInEditor(event.target)) return
     debug('onInput', { event })
@@ -587,7 +618,17 @@ class Content extends React.Component {
     const native = window.getSelection()
     const { anchorNode, anchorOffset } = native
     const point = getPoint(anchorNode, anchorOffset, state, editor)
-    if (!point) return
+    // If still processing key input, it means that a deletion occured
+    if (!point) {
+      if (this.tmp.isProcessingKeyInput) {
+        const next = state
+          .transform()
+          .deleteBackward()
+          .apply()
+        this.onChange(next)
+      }
+      return
+    }
 
     // Get the range in question.
     const { key, index, start, end } = point
@@ -617,6 +658,16 @@ class Content extends React.Component {
     const { text, marks } = range
     if (textContent == text) return
 
+    // If still processing key input, it means that a deletion occured
+    if (this.tmp.isProcessingKeyInput) {
+      const next = state
+        .transform()
+        .deleteBackward()
+        .apply()
+      this.onChange(next)
+      return
+    }
+
     // Determine what the selection should be after changing the text.
     const delta = textContent.length - text.length
     const after = selection.collapseToEnd().move(delta)
@@ -644,13 +695,13 @@ class Content extends React.Component {
    * leave the editor in an out-of-sync state, then bubble up.
    *
    * @param {Event} event
-   */
-
+   */   
   onKeyDown = (event) => {
     if (this.props.readOnly) return
     if (!this.isInEditor(event.target)) return
 
     const { altKey, ctrlKey, metaKey, shiftKey, which } = event
+    // const key = which === 229 && !this.tmp.isComposing ? 'backspace' : keycode(which)
     const key = keycode(which)
     const data = {}
 
@@ -669,6 +720,13 @@ class Content extends React.Component {
       (key == 'left' || key == 'right' || key == 'up' || key == 'down')
     ) {
       event.preventDefault()
+      return
+    }
+
+    // When an IME occurs, the key code is 229 and should be ignored until
+    // onBeforeInput and onInput handlers are called.
+    if (which == 229) {
+      this.tmp.isProcessingKeyInput = true
       return
     }
 
@@ -713,6 +771,10 @@ class Content extends React.Component {
     const { altKey, ctrlKey, metaKey, shiftKey, which } = event
     const key = keycode(which)
     const data = {}
+
+    if (this.tmp.isProcessingKeyInput) {
+      this.tmp.isProcessingKeyInput = false
+    }
 
     if (key == 'shift') {
       this.tmp.isShifting = false
@@ -908,8 +970,9 @@ class Content extends React.Component {
         onBeforeInput={this.onBeforeInput}
         onBlur={this.onBlur}
         onFocus={this.onFocus}
-        onCompositionEnd={this.onCompositionEnd}
         onCompositionStart={this.onCompositionStart}
+        onCompositionUpdate={this.onCompositionUpdate}
+        onCompositionEnd={this.onCompositionEnd}
         onCopy={this.onCopy}
         onCut={this.onCut}
         onDragEnd={this.onDragEnd}
