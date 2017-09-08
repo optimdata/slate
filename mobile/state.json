@@ -8,24 +8,10 @@
           "kind": "text",
           "ranges": [
             {
-              "text": "This is a reference: "
+              "text": ""
             }
           ]
-        },
-        {
-          "kind": "inline",
-          "isVoid": true,
-          "type": "reference",
-          "data": {}
-        },
-        {
-          "kind": "text",
-          "ranges": [
-            {
-              "text": " "
-            }
-          ]
-        },
+        }
       ]
     }
   ]
