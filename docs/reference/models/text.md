@@ -12,13 +12,13 @@ A text node in a Slate [`Document`](./document.md). Text nodes are always the bo
   - [`key`](#key)
 - [Computed Properties](#computed-properties)
   - [`kind`](#kind)
-  - [`length`](#length)
   - [`text`](#text)
 - [Static Methods](#static-methods)
   - [`Text.create`](#textcreate)
-  - [`Text.createFromString`](#textcreatefromstring)
-  - [`Text.createFromRanges`](#textcreatefromranges)
+  - [`Text.fromJSON`](#textfromjson)
   - [`Text.isText`](#textistext)
+- [Instance Methods](#instance-methods)
+  - [`toJSON`](#tojson)
 
 ## Properties
 
@@ -46,11 +46,6 @@ A unique identifier for the node.
 
 An immutable string value of `'text'` for easily separating this node from [`Inline`](./inline.md) or [`Block`](./block.md) nodes.
 
-### `length`
-`Number`
-
-The length of all of the characters in the text node.
-
 ### `text`
 `String`
 
@@ -64,17 +59,20 @@ A concatenated string of all of the characters in the text node.
 
 Create a text from a plain Javascript object of `properties`.
 
-### `Text.createFromRanges`
-`Text.createFromRanges(ranges: List<Range>) => Text`
+### `Text.fromJSON`
+`Text.fromJSON(object: Object) => Text`
 
-Create a text from a list of text ranges.
-
-### `Text.createFromString`
-`Text.createFromString(text: String, marks: Set) => Text`
-
-Create a text from a plain `String` and a set of marks.
+Create a text from a JSON `object`.
 
 ### `Text.isText`
 `Text.isText(maybeText: Any) => Boolean`
 
 Returns a boolean if the passed in argument is a `Text`.
+
+
+## Instance Methods
+
+### `toJSON`
+`toJSON() => Object`
+
+Returns a JSON representation of the text.

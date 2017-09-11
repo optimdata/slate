@@ -9,13 +9,11 @@ import './document'
  * Dependencies.
  */
 
-import Data from './data'
 import Node from './node'
-import Inline from './inline'
-import Text from './text'
 import MODEL_TYPES from '../constants/model-types'
 import generateKey from '../utils/generate-key'
-import { Map, List, Record } from 'immutable'
+import isPlainObject from 'is-plain-object'
+import { List, Map, Record } from 'immutable'
 
 /**
  * Default properties.
@@ -26,9 +24,9 @@ import { Map, List, Record } from 'immutable'
 const DEFAULTS = {
   data: new Map(),
   isVoid: false,
-  key: null,
+  key: undefined,
   nodes: new List(),
-  type: null
+  type: undefined,
 }
 
 /**
@@ -37,54 +35,115 @@ const DEFAULTS = {
  * @type {Block}
  */
 
-class Block extends new Record(DEFAULTS) {
+class Block extends Record(DEFAULTS) {
 
   /**
-   * Create a new `Block` with `properties`.
+   * Create a new `Block` from `value`.
    *
-   * @param {Object|Block} properties
+   * @param {Object|String|Block} value
    * @return {Block}
    */
 
-  static create(properties = {}) {
-    if (Block.isBlock(properties)) return properties
-    if (Inline.isInline(properties)) return properties
-    if (Text.isText(properties)) return properties
-    if (!properties.type) throw new Error('You must pass a block `type`.')
-
-    properties.key = properties.key || generateKey()
-    properties.data = Data.create(properties.data)
-    properties.isVoid = !!properties.isVoid
-    properties.nodes = Block.createList(properties.nodes)
-
-    if (properties.nodes.size == 0) {
-      properties.nodes = properties.nodes.push(Text.create())
+  static create(value = {}) {
+    if (Block.isBlock(value)) {
+      return value
     }
 
-    return new Block(properties)
+    if (typeof value == 'string') {
+      value = { type: value }
+    }
+
+    if (isPlainObject(value)) {
+      return Block.fromJSON(value)
+    }
+
+    throw new Error(`\`Block.create\` only accepts objects, strings or blocks, but you passed it: ${value}`)
   }
 
   /**
-   * Create a list of `Blocks` from an array.
+   * Create a list of `Blocks` from `value`.
    *
-   * @param {Array<Object|Block>} elements
+   * @param {Array<Block|Object>|List<Block|Object>} value
    * @return {List<Block>}
    */
 
-  static createList(elements = []) {
-    if (List.isList(elements)) return elements
-    return new List(elements.map(Block.create))
+  static createList(value = []) {
+    if (List.isList(value) || Array.isArray(value)) {
+      const list = new List(value.map(Block.create))
+      return list
+    }
+
+    throw new Error(`\`Block.createList\` only accepts arrays or lists, but you passed it: ${value}`)
   }
 
   /**
-   * Determines if the passed in paramter is a Slate Block or not
+   * Create a `Block` from a JSON `object`.
    *
-   * @param {*} maybeBlock
+   * @param {Object|Block} object
+   * @return {Block}
+   */
+
+  static fromJSON(object) {
+    if (Block.isBlock(object)) {
+      return object
+    }
+
+    const {
+      data = {},
+      isVoid = false,
+      key = generateKey(),
+      type,
+    } = object
+
+    let {
+      nodes = [],
+    } = object
+
+    if (typeof type != 'string') {
+      throw new Error('`Block.fromJSON` requires a `type` string.')
+    }
+
+    if (nodes.length == 0) {
+      nodes = [{ kind: 'text', text: '' }]
+    }
+
+    const block = new Block({
+      key,
+      type,
+      isVoid: !!isVoid,
+      data: new Map(data),
+      nodes: new List(nodes.map(Node.fromJSON)),
+    })
+
+    return block
+  }
+
+  /**
+   * Alias `fromJS`.
+   */
+
+  static fromJS = Block.fromJSON
+
+  /**
+   * Check if a `value` is a `Block`.
+   *
+   * @param {Any} value
    * @return {Boolean}
    */
 
-  static isBlock(maybeBlock) {
-    return !!(maybeBlock && maybeBlock[MODEL_TYPES.BLOCK])
+  static isBlock(value) {
+    return !!(value && value[MODEL_TYPES.BLOCK])
+  }
+
+  /**
+   * Check if a `value` is a block list.
+   *
+   * @param {Any} value
+   * @return {Boolean}
+   */
+
+  static isBlockList(value) {
+    return List.isList(value) && value.every(item => Block.isBlock(item))
   }
 
   /**
@@ -98,7 +157,7 @@ class Block extends new Record(DEFAULTS) {
   }
 
   /**
-   * Is the node empty?
+   * Check if the block is empty.
    *
    * @return {Boolean}
    */
@@ -108,17 +167,7 @@ class Block extends new Record(DEFAULTS) {
   }
 
   /**
-   * Get the length of the concatenated text of the node.
-   *
-   * @return {Number}
-   */
-
-  get length() {
-    return this.text.length
-  }
-
-  /**
-   * Get the concatenated text `string` of all child nodes.
+   * Get the concatenated text of all the block's children.
    *
    * @return {String}
    */
@@ -127,10 +176,42 @@ class Block extends new Record(DEFAULTS) {
     return this.getText()
   }
 
+  /**
+   * Return a JSON representation of the block.
+   *
+   * @param {Object} options
+   * @return {Object}
+   */
+
+  toJSON(options = {}) {
+    const object = {
+      data: this.data.toJSON(),
+      key: this.key,
+      kind: this.kind,
+      isVoid: this.isVoid,
+      type: this.type,
+      nodes: this.nodes.toArray().map(n => n.toJSON(options)),
+    }
+
+    if (!options.preserveKeys) {
+      delete object.key
+    }
+
+    return object
+  }
+
+  /**
+   * Alias `toJS`.
+   */
+
+  toJS(options) {
+    return this.toJSON(options)
+  }
+
 }
 
 /**
- * Pseduo-symbol that shows this is a Slate Block
+ * Attach a pseudo-symbol for type checking.
  */
 
 Block.prototype[MODEL_TYPES.BLOCK] = true
@@ -139,9 +220,10 @@ Block.prototype[MODEL_TYPES.BLOCK] = true
  * Mix in `Node` methods.
  */
 
-for (const method in Node) {
-  Block.prototype[method] = Node[method]
-}
+Object.getOwnPropertyNames(Node.prototype).forEach((method) => {
+  if (method == 'constructor') return
+  Block.prototype[method] = Node.prototype[method]
+})
 
 /**
  * Export.

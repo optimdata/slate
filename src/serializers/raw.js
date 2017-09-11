@@ -1,13 +1,33 @@
 
 import Block from '../models/block'
-import Character from '../models/character'
 import Document from '../models/document'
 import Inline from '../models/inline'
 import Mark from '../models/mark'
+import Range from '../models/range'
 import Selection from '../models/selection'
 import State from '../models/state'
 import Text from '../models/text'
 import isEmpty from 'is-empty'
+import logger from '../utils/logger'
+
+/**
+ * Deprecation helper.
+ */
+
+let logged = false
+
+function deprecate(options) {
+  if (logged) {
+    return
+  }
+
+  if (options.terse) {
+    logger.deprecate('0.23.0', 'The `terse` option for raw serialization is deprecated and will be removed in a future release.')
+  }
+
+  logger.deprecate('0.23.0', 'The `Raw` serializer is deprecated, please use `Model.fromJSON` and `model.toJSON` instead.')
+  logged = true
+}
 
 /**
  * Raw.
@@ -22,10 +42,10 @@ const Raw = {
    *
    * @param {Object} object
    * @param {Object} options (optional)
-   * @return {Block}
+   * @return {State}
    */
 
-  deserialize(object, options) {
+  deserialize(object, options = {}) {
     return Raw.deserializeState(object, options)
   },
 
@@ -38,17 +58,14 @@ const Raw = {
    */
 
   deserializeBlock(object, options = {}) {
-    if (options.terse) object = Raw.untersifyBlock(object)
+    deprecate(options)
 
-    return Block.create({
-      key: object.key,
-      type: object.type,
-      data: object.data,
-      isVoid: object.isVoid,
-      nodes: Block.createList(object.nodes.map((node) => {
-        return Raw.deserializeNode(node, options)
-      }))
-    })
+    if (options.terse) {
+      object = Raw.untersifyBlock(object)
+      object.nodes = object.nodes.map(node => Raw.deserializeNode(node, options))
+    }
+
+    return Block.fromJSON(object)
   },
 
   /**
@@ -59,14 +76,14 @@ const Raw = {
    * @return {Document}
    */
 
-  deserializeDocument(object, options) {
-    return Document.create({
-      key: object.key,
-      data: object.data,
-      nodes: Block.createList(object.nodes.map((node) => {
-        return Raw.deserializeNode(node, options)
-      }))
-    })
+  deserializeDocument(object, options = {}) {
+    deprecate(options)
+
+    if (options.terse) {
+      object.nodes = object.nodes.map(node => Raw.deserializeNode(node, options))
+    }
+
+    return Document.fromJSON(object)
   },
 
   /**
@@ -78,17 +95,14 @@ const Raw = {
    */
 
   deserializeInline(object, options = {}) {
-    if (options.terse) object = Raw.untersifyInline(object)
+    deprecate(options)
 
-    return Inline.create({
-      key: object.key,
-      type: object.type,
-      data: object.data,
-      isVoid: object.isVoid,
-      nodes: Inline.createList(object.nodes.map((node) => {
-        return Raw.deserializeNode(node, options)
-      }))
-    })
+    if (options.terse) {
+      object = Raw.untersifyInline(object)
+      object.nodes = object.nodes.map(node => Raw.deserializeNode(node, options))
+    }
+
+    return Inline.fromJSON(object)
   },
 
   /**
@@ -99,8 +113,9 @@ const Raw = {
    * @return {Mark}
    */
 
-  deserializeMark(object, options) {
-    return Mark.create(object)
+  deserializeMark(object, options = {}) {
+    deprecate(options)
+    return Mark.fromJSON(object)
   },
 
   /**
@@ -111,7 +126,7 @@ const Raw = {
    * @return {Node}
    */
 
-  deserializeNode(object, options) {
+  deserializeNode(object, options = {}) {
     switch (object.kind) {
       case 'block': return Raw.deserializeBlock(object, options)
       case 'document': return Raw.deserializeDocument(object, options)
@@ -132,20 +147,13 @@ const Raw = {
    */
 
   deserializeRange(object, options = {}) {
-    if (options.terse) object = Raw.untersifyRange(object)
+    deprecate(options)
 
-    const marks = Mark.createSet(object.marks.map((mark) => {
-      return Raw.deserializeMark(mark, options)
-    }))
+    if (options.terse) {
+      object = Raw.untersifyRange(object)
+    }
 
-    return Character.createList(object.text
-      .split('')
-      .map((char) => {
-        return Character.create({
-          text: char,
-          marks,
-        })
-      }))
+    return Range.fromJSON(object)
   },
 
   /**
@@ -157,13 +165,8 @@ const Raw = {
    */
 
   deserializeSelection(object, options = {}) {
-    return Selection.create({
-      anchorKey: object.anchorKey,
-      anchorOffset: object.anchorOffset,
-      focusKey: object.focusKey,
-      focusOffset: object.focusOffset,
-      isFocused: object.isFocused,
-    })
+    deprecate(options)
+    return Selection.fromJSON(object)
   },
 
   /**
@@ -175,16 +178,14 @@ const Raw = {
    */
 
   deserializeState(object, options = {}) {
-    if (options.terse) object = Raw.untersifyState(object)
+    deprecate(options)
 
-    const document = Raw.deserializeDocument(object.document, options)
-    let selection
-
-    if (object.selection != null) {
-      selection = Raw.deserializeSelection(object.selection, options)
+    if (options.terse) {
+      object = Raw.untersifyState(object)
+      object.document = Raw.deserializeDocument(object.document, options)
     }
 
-    return State.create({ data: object.data, document, selection }, options)
+    return State.fromJSON(object)
   },
 
   /**
@@ -196,14 +197,14 @@ const Raw = {
    */
 
   deserializeText(object, options = {}) {
-    if (options.terse) object = Raw.untersifyText(object)
+    deprecate(options)
 
-    return Text.create({
-      key: object.key,
-      characters: object.ranges.reduce((characters, range) => {
-        return characters.concat(Raw.deserializeRange(range, options))
-      }, Character.createList())
-    })
+    if (options.terse) {
+      object = Raw.untersifyText(object)
+      object.ranges = object.ranges.map(range => Raw.deserializeRange(range, options))
+    }
+
+    return Text.fromJSON(object)
   },
 
   /**
@@ -214,7 +215,8 @@ const Raw = {
    * @return {Object}
    */
 
-  serialize(model, options) {
+  serialize(model, options = {}) {
+    deprecate(options)
     return Raw.serializeState(model, options)
   },
 
@@ -227,24 +229,15 @@ const Raw = {
    */
 
   serializeBlock(block, options = {}) {
-    const object = {
-      data: block.data.toJSON(),
-      key: block.key,
-      kind: block.kind,
-      isVoid: block.isVoid,
-      type: block.type,
-      nodes: block.nodes
-        .toArray()
-        .map(node => Raw.serializeNode(node, options))
+    deprecate(options)
+    let object = block.toJSON(options)
+
+    if (options.terse) {
+      object.nodes = block.nodes.toArray().map(node => Raw.serializeNode(node, options))
+      object = Raw.tersifyBlock(object)
     }
 
-    if (!options.preserveKeys) {
-      delete object.key
-    }
-
-    return options.terse
-      ? Raw.tersifyBlock(object)
-      : object
+    return object
   },
 
   /**
@@ -256,22 +249,15 @@ const Raw = {
    */
 
   serializeDocument(document, options = {}) {
-    const object = {
-      data: document.data.toJSON(),
-      key: document.key,
-      kind: document.kind,
-      nodes: document.nodes
-        .toArray()
-        .map(node => Raw.serializeNode(node, options))
+    deprecate(options)
+    let object = document.toJSON(options)
+
+    if (options.terse) {
+      object.nodes = document.nodes.toArray().map(node => Raw.serializeNode(node, options))
+      object = Raw.tersifyDocument(object)
     }
 
-    if (!options.preserveKeys) {
-      delete object.key
-    }
-
-    return options.terse
-      ? Raw.tersifyDocument(object)
-      : object
+    return object
   },
 
   /**
@@ -283,24 +269,15 @@ const Raw = {
    */
 
   serializeInline(inline, options = {}) {
-    const object = {
-      data: inline.data.toJSON(),
-      key: inline.key,
-      kind: inline.kind,
-      isVoid: inline.isVoid,
-      type: inline.type,
-      nodes: inline.nodes
-        .toArray()
-        .map(node => Raw.serializeNode(node, options))
+    deprecate(options)
+    let object = inline.toJSON(options)
+
+    if (options.terse) {
+      object.nodes = inline.nodes.toArray().map(node => Raw.serializeNode(node, options))
+      object = Raw.tersifyInline(object)
     }
 
-    if (!options.preserveKeys) {
-      delete object.key
-    }
-
-    return options.terse
-      ? Raw.tersifyInline(object)
-      : object
+    return object
   },
 
   /**
@@ -312,15 +289,14 @@ const Raw = {
    */
 
   serializeMark(mark, options = {}) {
-    const object = {
-      data: mark.data.toJSON(),
-      kind: mark.kind,
-      type: mark.type
+    deprecate(options)
+    let object = mark.toJSON()
+
+    if (options.terse) {
+      object = Raw.tersifyMark(object)
     }
 
-    return options.terse
-      ? Raw.tersifyMark(object)
-      : object
+    return object
   },
 
   /**
@@ -331,7 +307,8 @@ const Raw = {
    * @return {Object}
    */
 
-  serializeNode(node, options) {
+  serializeNode(node, options = {}) {
+    deprecate(options)
     switch (node.kind) {
       case 'block': return Raw.serializeBlock(node, options)
       case 'document': return Raw.serializeDocument(node, options)
@@ -352,17 +329,15 @@ const Raw = {
    */
 
   serializeRange(range, options = {}) {
-    const object = {
-      kind: range.kind,
-      text: range.text,
-      marks: range.marks
-        .toArray()
-        .map(mark => Raw.serializeMark(mark, options))
+    deprecate(options)
+    let object = range.toJSON()
+
+    if (options.terse) {
+      object.marks = range.marks.toArray().map(mark => Raw.serializeMark(mark, options))
+      object = Raw.tersifyRange(object)
     }
 
-    return options.terse
-      ? Raw.tersifyRange(object)
-      : object
+    return object
   },
 
   /**
@@ -374,19 +349,14 @@ const Raw = {
    */
 
   serializeSelection(selection, options = {}) {
-    const object = {
-      kind: selection.kind,
-      anchorKey: selection.anchorKey,
-      anchorOffset: selection.anchorOffset,
-      focusKey: selection.focusKey,
-      focusOffset: selection.focusOffset,
-      isBackward: selection.isBackward,
-      isFocused: selection.isFocused,
+    deprecate(options)
+    let object = selection.toJSON(options)
+
+    if (options.terse) {
+      object = Raw.tersifySelection(object)
     }
 
-    return options.terse
-      ? Raw.tersifySelection(object)
-      : object
+    return object
   },
 
   /**
@@ -398,24 +368,15 @@ const Raw = {
    */
 
   serializeState(state, options = {}) {
-    const object = {
-      document: Raw.serializeDocument(state.document, options),
-      kind: state.kind
+    deprecate(options)
+    let object = state.toJSON(options)
+
+    if (options.terse) {
+      object.document = Raw.serializeDocument(state.document, options)
+      object = Raw.tersifyState(object)
     }
 
-    if (options.preserveSelection) {
-      object.selection = Raw.serializeSelection(state.selection, options)
-    }
-
-    if (options.preserveStateData) {
-      object.data = state.data.toJSON()
-    }
-
-    const ret = options.terse
-      ? Raw.tersifyState(object)
-      : object
-
-    return ret
+    return object
   },
 
   /**
@@ -427,22 +388,15 @@ const Raw = {
    */
 
   serializeText(text, options = {}) {
-    const object = {
-      key: text.key,
-      kind: text.kind,
-      ranges: text
-        .getRanges()
-        .toArray()
-        .map(range => Raw.serializeRange(range, options))
+    deprecate(options)
+    let object = text.toJSON(options)
+
+    if (options.terse) {
+      object.ranges = text.getRanges().toArray().map(range => Raw.serializeRange(range, options))
+      object = Raw.tersifyText(object)
     }
 
-    if (!options.preserveKeys) {
-      delete object.key
-    }
-
-    return options.terse
-      ? Raw.tersifyText(object)
-      : object
+    return object
   },
 
   /**
@@ -717,7 +671,8 @@ const Raw = {
         marks: object.marks || []
       }]
     }
-  }
+  },
+
 }
 
 /**

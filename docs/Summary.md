@@ -15,6 +15,7 @@
 
 ## Component Reference
 
+- [Custom](./reference/components/custom.md)
 - [Editor](./reference/components/editor.md)
 - [Placeholder](./reference/components/placeholder.md)
 
@@ -32,14 +33,13 @@
 - [Schema](./reference/models/schema.md)
 - [State](./reference/models/state.md)
 - [Text](./reference//models/text.md)
-- [Transform](./reference/models/transform.md)
+- [Change](./reference/models/change.md)
 
 
 ## Serializer Reference
 
 - [Html](./reference/serializers/html.md)
 - [Plain](./reference/serializers/plain.md)
-- [Raw](./reference/serializers/raw.md)
 
 
 ## Plugin Reference

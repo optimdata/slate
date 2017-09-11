@@ -9,12 +9,10 @@ import './document'
  * Dependencies.
  */
 
-import Block from './block'
-import Data from './data'
 import Node from './node'
-import Text from './text'
 import MODEL_TYPES from '../constants/model-types'
 import generateKey from '../utils/generate-key'
+import isPlainObject from 'is-plain-object'
 import { List, Map, Record } from 'immutable'
 
 /**
@@ -26,9 +24,9 @@ import { List, Map, Record } from 'immutable'
 const DEFAULTS = {
   data: new Map(),
   isVoid: false,
-  key: null,
+  key: undefined,
   nodes: new List(),
-  type: null
+  type: undefined,
 }
 
 /**
@@ -37,54 +35,115 @@ const DEFAULTS = {
  * @type {Inline}
  */
 
-class Inline extends new Record(DEFAULTS) {
+class Inline extends Record(DEFAULTS) {
 
   /**
-   * Create a new `Inline` with `properties`.
+   * Create a new `Inline` with `attrs`.
    *
-   * @param {Object|Inline} properties
+   * @param {Object|String|Inline} attrs
    * @return {Inline}
    */
 
-  static create(properties = {}) {
-    if (Block.isBlock(properties)) return properties
-    if (Inline.isInline(properties)) return properties
-    if (Text.isText(properties)) return properties
-    if (!properties.type) throw new Error('You must pass an inline `type`.')
-
-    properties.key = properties.key || generateKey()
-    properties.data = Data.create(properties.data)
-    properties.isVoid = !!properties.isVoid
-    properties.nodes = Inline.createList(properties.nodes)
-
-    if (properties.nodes.size == 0) {
-      properties.nodes = properties.nodes.push(Text.create())
+  static create(attrs = {}) {
+    if (Inline.isInline(attrs)) {
+      return attrs
     }
 
-    return new Inline(properties)
+    if (typeof attrs == 'string') {
+      attrs = { type: attrs }
+    }
+
+    if (isPlainObject(attrs)) {
+      return Inline.fromJSON(attrs)
+    }
+
+    throw new Error(`\`Inline.create\` only accepts objects, strings or inlines, but you passed it: ${attrs}`)
   }
 
   /**
    * Create a list of `Inlines` from an array.
    *
-   * @param {Array<Object|Inline>} elements
+   * @param {Array<Inline|Object>|List<Inline|Object>} elements
    * @return {List<Inline>}
    */
 
   static createList(elements = []) {
-    if (List.isList(elements)) return elements
-    return new List(elements.map(Inline.create))
+    if (List.isList(elements) || Array.isArray(elements)) {
+      const list = new List(elements.map(Inline.create))
+      return list
+    }
+
+    throw new Error(`\`Inline.createList\` only accepts arrays or lists, but you passed it: ${elements}`)
   }
 
   /**
-   * Determines if the passed in paramter is a Slate Inline or not
+   * Create a `Inline` from a JSON `object`.
    *
-   * @param {*} maybeInline
+   * @param {Object|Inline} object
+   * @return {Inline}
+   */
+
+  static fromJSON(object) {
+    if (Inline.isInline(object)) {
+      return object
+    }
+
+    const {
+      data = {},
+      isVoid = false,
+      key = generateKey(),
+      type,
+    } = object
+
+    let {
+      nodes = [],
+    } = object
+
+    if (typeof type != 'string') {
+      throw new Error('`Inline.fromJS` requires a `type` string.')
+    }
+
+    if (nodes.length == 0) {
+      nodes = [{ kind: 'text', text: '' }]
+    }
+
+    const inline = new Inline({
+      key,
+      type,
+      isVoid: !!isVoid,
+      data: new Map(data),
+      nodes: new List(nodes.map(Node.fromJSON)),
+    })
+
+    return inline
+  }
+
+  /**
+   * Alias `fromJS`.
+   */
+
+  static fromJS = Inline.fromJSON
+
+  /**
+   * Check if a `value` is a `Inline`.
+   *
+   * @param {Any} value
    * @return {Boolean}
    */
 
-  static isInline(maybeInline) {
-    return !!(maybeInline && maybeInline[MODEL_TYPES.INLINE])
+  static isInline(value) {
+    return !!(value && value[MODEL_TYPES.INLINE])
+  }
+
+  /**
+   * Check if a `value` is a list of inlines.
+   *
+   * @param {Any} value
+   * @return {Boolean}
+   */
+
+  static isInlineList(value) {
+    return List.isList(value) && value.every(item => Inline.isInline(item))
   }
 
   /**
@@ -98,7 +157,7 @@ class Inline extends new Record(DEFAULTS) {
   }
 
   /**
-   * Is the node empty?
+   * Check if the inline is empty.
    *
    * @return {Boolean}
    */
@@ -108,17 +167,7 @@ class Inline extends new Record(DEFAULTS) {
   }
 
   /**
-   * Get the length of the concatenated text of the node.
-   *
-   * @return {Number}
-   */
-
-  get length() {
-    return this.text.length
-  }
-
-  /**
-   * Get the concatenated text `string` of all child nodes.
+   * Get the concatenated text of all the inline's children.
    *
    * @return {String}
    */
@@ -127,10 +176,42 @@ class Inline extends new Record(DEFAULTS) {
     return this.getText()
   }
 
+  /**
+   * Return a JSON representation of the inline.
+   *
+   * @param {Object} options
+   * @return {Object}
+   */
+
+  toJSON(options = {}) {
+    const object = {
+      data: this.data.toJSON(),
+      key: this.key,
+      kind: this.kind,
+      isVoid: this.isVoid,
+      type: this.type,
+      nodes: this.nodes.toArray().map(n => n.toJSON(options)),
+    }
+
+    if (!options.preserveKeys) {
+      delete object.key
+    }
+
+    return object
+  }
+
+  /**
+   * Alias `toJS`.
+   */
+
+  toJS(options) {
+    return this.toJSON(options)
+  }
+
 }
 
 /**
- * Pseduo-symbol that shows this is a Slate Inline
+ * Attach a pseudo-symbol for type checking.
  */
 
 Inline.prototype[MODEL_TYPES.INLINE] = true
@@ -139,9 +220,10 @@ Inline.prototype[MODEL_TYPES.INLINE] = true
  * Mix in `Node` methods.
  */
 
-for (const method in Node) {
-  Inline.prototype[method] = Node[method]
-}
+Object.getOwnPropertyNames(Node.prototype).forEach((method) => {
+  if (method == 'constructor') return
+  Inline.prototype[method] = Node.prototype[method]
+})
 
 /**
  * Export.

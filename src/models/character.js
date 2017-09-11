@@ -1,6 +1,7 @@
 
-import Mark from './mark'
 import MODEL_TYPES from '../constants/model-types'
+import isPlainObject from 'is-plain-object'
+import logger from '../utils/logger'
 import { List, Record, Set } from 'immutable'
 
 /**
@@ -11,7 +12,7 @@ import { List, Record, Set } from 'immutable'
 
 const DEFAULTS = {
   marks: new Set(),
-  text: ''
+  text: '',
 }
 
 /**
@@ -20,56 +21,111 @@ const DEFAULTS = {
  * @type {Character}
  */
 
-class Character extends new Record(DEFAULTS) {
+class Character extends Record(DEFAULTS) {
 
   /**
-   * Create a character record with `properties`.
+   * Create a `Character` with `attrs`.
    *
-   * @param {Object|Character} properties
+   * @param {Object|String|Character} attrs
    * @return {Character}
    */
 
-  static create(properties = {}) {
-    if (Character.isCharacter(properties)) return properties
-    properties.marks = Mark.createSet(properties.marks)
-    return new Character(properties)
+  static create(attrs = {}) {
+    if (Character.isCharacter(attrs)) {
+      return attrs
+    }
+
+    if (typeof attrs == 'string') {
+      attrs = { text: attrs }
+    }
+
+    if (isPlainObject(attrs)) {
+      return Character.fromJSON(attrs)
+    }
+
+    throw new Error(`\`Character.create\` only accepts objects, strings or characters, but you passed it: ${attrs}`)
   }
 
   /**
-   * Create a characters list from an array of characters.
+   * Create a list of `Characters` from `elements`.
    *
-   * @param {Array<Object|Character>} array
+   * @param {String|Array<Object|Character|String>|List<Object|Character|String>} elements
    * @return {List<Character>}
    */
 
-  static createList(array = []) {
-    if (List.isList(array)) return array
-    return new List(array.map(Character.create))
+  static createList(elements = []) {
+    if (typeof elements == 'string') {
+      elements = elements.split('')
+    }
+
+    if (List.isList(elements) || Array.isArray(elements)) {
+      const list = new List(elements.map(Character.create))
+      return list
+    }
+
+    throw new Error(`\`Block.createList\` only accepts strings, arrays or lists, but you passed it: ${elements}`)
   }
 
   /**
-   * Create a characters list from a `string` and optional `marks`.
+   * Create a `Character` from a JSON `object`.
    *
-   * @param {String} string
-   * @param {Set<Mark>} marks (optional)
-   * @return {List<Character>}
+   * @param {Object} object
+   * @return {Character}
    */
 
-  static createListFromText(string, marks) {
-    const chars = string.split('').map((text) => { return { text, marks } })
-    const list = Character.createList(chars)
-    return list
+  static fromJSON(object) {
+    const {
+      text,
+      marks = [],
+    } = object
+
+    if (typeof text != 'string') {
+      throw new Error('`Character.fromJSON` requires a block `text` string.')
+    }
+
+    const character = new Character({
+      text,
+      marks: new Set(marks),
+    })
+
+    return character
   }
 
   /**
-   * Determines if the passed in paramter is a Slate Character or not
+   * Alias `fromJS`.
+   */
+
+  static fromJS = Character.fromJSON
+
+  /**
+   * Check if a `value` is a `Character`.
    *
-   * @param {*} maybeCharacter
+   * @param {Any} value
    * @return {Boolean}
    */
 
-  static isCharacter(maybeCharacter) {
-    return !!(maybeCharacter && maybeCharacter[MODEL_TYPES.CHARACTER])
+  static isCharacter(value) {
+    return !!(value && value[MODEL_TYPES.CHARACTER])
+  }
+
+  /**
+   * Check if a `value` is a character list.
+   *
+   * @param {Any} value
+   * @return {Boolean}
+   */
+
+  static isCharacterList(value) {
+    return List.isList(value) && value.every(item => Character.isCharacter(item))
+  }
+
+  /**
+   * Deprecated.
+   */
+
+  static createListFromText(string) {
+    logger.deprecate('0.22.0', 'The `Character.createListFromText(string)` method is deprecated, use `Character.createList(string)` instead.')
+    return this.createList(string)
   }
 
   /**
@@ -82,10 +138,34 @@ class Character extends new Record(DEFAULTS) {
     return 'character'
   }
 
+  /**
+   * Return a JSON representation of the character.
+   *
+   * @return {Object}
+   */
+
+  toJSON() {
+    const object = {
+      kind: this.kind,
+      marks: this.marks.toArray().map(m => m.toJSON()),
+      text: this.text,
+    }
+
+    return object
+  }
+
+  /**
+   * Alias `toJS`.
+   */
+
+  toJS() {
+    return this.toJSON()
+  }
+
 }
 
 /**
- * Pseduo-symbol that shows this is a Slate Character
+ * Attach a pseudo-symbol for type checking.
  */
 
 Character.prototype[MODEL_TYPES.CHARACTER] = true

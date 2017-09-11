@@ -67,15 +67,15 @@ The second is a simple plugin to collapse the selection whenever the escape key 
 The third is another simple plugin that inserts a "soft" break when enter is pressed instead of creating a new block. Try pressing enter!
 
 The fourth is an example of using the plugin.render property to create a higher-order-component.`)
-  };
+  }
 
   /**
    * On change.
    *
-   * @param {State} state
+   * @param {Change} change
    */
 
-  onChange = (state) => {
+  onChange = ({ state }) => {
     this.setState({ state })
   }
 
