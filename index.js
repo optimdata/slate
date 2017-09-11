@@ -7,7 +7,6 @@ import CheckLists from './check-lists'
 import CodeHighlighting from './code-highlighting'
 import Embeds from './embeds'
 import Emojis from './emojis'
-import FocusBlur from './focus-blur'
 import ForcedLayout from './forced-layout'
 import HoveringMenu from './hovering-menu'
 import Iframes from './iframes'
@@ -24,7 +23,7 @@ import RichText from './rich-text'
 import Tables from './tables'
 import Mobile from './mobile'
 
-import DevLargeDocument from './dev/large-document'
+import DevHugeDocument from './dev/huge-document'
 import DevPerformancePlain from './dev/performance-plain'
 import DevPerformanceRich from './dev/performance-rich'
 
@@ -60,11 +59,10 @@ const EXAMPLES = [
   ['RTL', RTL, '/rtl'],
   ['Plugins', Plugins, '/plugins'],
   ['Iframes', Iframes, '/iframes'],
-  ['Focus & Blur', FocusBlur, '/focus-blur'],
   ['Forced Layout', ForcedLayout, '/forced-layout'],
   ['Mobile', Mobile, '/mobile'],
 
-  ['DEV:Large', DevLargeDocument, '/dev-large', true],
+  ['DEV:Huge', DevHugeDocument, '/dev-huge', true],
   ['DEV:Plain', DevPerformancePlain, '/dev-performance-plain', true],
   ['DEV:Rich', DevPerformanceRich, '/dev-performance-rich', true],
 ]
