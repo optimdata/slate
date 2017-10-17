@@ -73,7 +73,8 @@ if (browser) {
 
 export const IS_CHROME = BROWSER === 'chrome'
 export const IS_FIREFOX = BROWSER === 'firefox'
-export const IS_SAFARI = BROWSER === 'safari'
+// WebViews running on iOS apps behave like Safari Mobile
+export const IS_SAFARI = BROWSER === 'safari' || OS === 'ios'
 export const IS_IE = BROWSER === 'ie'
 
 export const IS_IOS = OS === 'ios'
