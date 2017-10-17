@@ -214,11 +214,6 @@ input:focus {
   align-items: center;
 }
 
-.check-list-item.checked {
-  opacity: 0.666;
-  text-decoration: line-through;
-}
-
 .check-list-item > span:first-child {
   margin-right: 0.75em;
 }

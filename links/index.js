@@ -1,5 +1,5 @@
 
-import { Editor, State } from '../..'
+import { Editor, Raw } from '../..'
 import React from 'react'
 import initialState from './state.json'
 import isUrl from 'is-url'
@@ -22,32 +22,6 @@ const schema = {
 }
 
 /**
- * A change helper to standardize wrapping links.
- *
- * @param {Change} change
- * @param {String} href
- */
-
-function wrapLink(change, href) {
-  change.wrapInline({
-    type: 'link',
-    data: { href }
-  })
-
-  change.collapseToEnd()
-}
-
-/**
- * A change helper to standardize unwrapping links.
- *
- * @param {Change} change
- */
-
-function unwrapLink(change) {
-  change.unwrapInline('link')
-}
-
-/**
  * The links example.
  *
  * @type {Component}
@@ -62,7 +36,7 @@ class Links extends React.Component {
    */
 
   state = {
-    state: State.fromJSON(initialState)
+    state: Raw.deserialize(initialState, { terse: true })
   };
 
   /**
@@ -79,10 +53,10 @@ class Links extends React.Component {
   /**
    * On change.
    *
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onChange = ({ state }) => {
+  onChange = (state) => {
     this.setState({ state })
   }
 
@@ -95,29 +69,44 @@ class Links extends React.Component {
 
   onClickLink = (e) => {
     e.preventDefault()
-    const { state } = this.state
+    let { state } = this.state
     const hasLinks = this.hasLinks()
-    const change = state.change()
 
     if (hasLinks) {
-      change.call(unwrapLink)
+      state = state
+        .transform()
+        .unwrapInline('link')
+        .apply()
     }
 
     else if (state.isExpanded) {
       const href = window.prompt('Enter the URL of the link:')
-      change.call(wrapLink, href)
+      state = state
+        .transform()
+        .wrapInline({
+          type: 'link',
+          data: { href }
+        })
+        .collapseToEnd()
+        .apply()
     }
 
     else {
       const href = window.prompt('Enter the URL of the link:')
       const text = window.prompt('Enter the text for the link:')
-      change
+      state = state
+        .transform()
         .insertText(text)
         .extend(0 - text.length)
-        .call(wrapLink, href)
+        .wrapInline({
+          type: 'link',
+          data: { href }
+        })
+        .collapseToEnd()
+        .apply()
     }
 
-    this.onChange(change)
+    this.setState({ state })
   }
 
   /**
@@ -125,20 +114,29 @@ class Links extends React.Component {
    *
    * @param {Event} e
    * @param {Object} data
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onPaste = (e, data, change) => {
-    if (change.state.isCollapsed) return
+  onPaste = (e, data, state) => {
+    if (state.isCollapsed) return
     if (data.type != 'text' && data.type != 'html') return
     if (!isUrl(data.text)) return
 
+    const transform = state.transform()
+
     if (this.hasLinks()) {
-      change.call(unwrapLink)
+      transform.unwrapInline('link')
     }
 
-    change.call(wrapLink, data.text)
-    return true
+    return transform
+      .wrapInline({
+        type: 'link',
+        data: {
+          href: data.text
+        }
+      })
+      .collapseToEnd()
+      .apply()
   }
 
   /**

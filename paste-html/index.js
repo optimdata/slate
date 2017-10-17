@@ -1,5 +1,5 @@
 
-import { Editor, Html, State } from '../..'
+import { Editor, Html, Raw } from '../..'
 import React from 'react'
 import initialState from './state.json'
 
@@ -155,16 +155,16 @@ class PasteHtml extends React.Component {
    */
 
   state = {
-    state: State.fromJSON(initialState)
-  }
+    state: Raw.deserialize(initialState, { terse: true })
+  };
 
   /**
    * On change, save the new state.
    *
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onChange = ({ state }) => {
+  onChange = (state) => {
     this.setState({ state })
   }
 
@@ -173,15 +173,19 @@ class PasteHtml extends React.Component {
    *
    * @param {Event} e
    * @param {Object} data
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onPaste = (e, data, change) => {
+  onPaste = (e, data, state) => {
     if (data.type != 'html') return
     if (data.isShift) return
+
     const { document } = serializer.deserialize(data.html)
-    change.insertFragment(document)
-    return true
+
+    return state
+      .transform()
+      .insertFragment(document)
+      .apply()
   }
 
   /**

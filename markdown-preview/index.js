@@ -140,10 +140,10 @@ class MarkdownPreview extends React.Component {
   /**
    * On change.
    *
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onChange = ({ state }) => {
+  onChange = (state) => {
     this.setState({ state })
   }
 

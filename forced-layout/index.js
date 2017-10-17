@@ -1,5 +1,5 @@
 
-import { Block, Editor, State } from '../..'
+import { Editor, Raw, Block } from '../..'
 import React from 'react'
 import initialState from './state.json'
 
@@ -18,10 +18,10 @@ class ForcedLayout extends React.Component {
    */
 
   state = {
-    state: State.fromJSON(initialState),
+    state: Raw.deserialize(initialState, { terse: true }),
     schema: {
       nodes: {
-        'title': props => <h2 {...props.attrs}>{props.children}</h2>,
+        'title': props => <h1 {...props.attrs}>{props.children}</h1>,
         'paragraph': props => <p {...props.attrs}>{props.children}</p>
       },
       rules: [
@@ -30,13 +30,13 @@ class ForcedLayout extends React.Component {
         {
           match: node => node.kind === 'document',
           validate: document => !document.nodes.size || document.nodes.first().type !== 'title' ? document.nodes : null,
-          normalize: (change, document, nodes) => {
+          normalize: (transform, document, nodes) => {
             if (!nodes.size) {
               const title = Block.create({ type: 'title', data: {}})
-              return change.insertNodeByKey(document.key, 0, title)
+              return transform.insertNodeByKey(document.key, 0, title)
             }
 
-            return change.setNodeByKey(nodes.first().key, 'title')
+            return transform.setNodeByKey(nodes.first().key, 'title')
           }
         },
 
@@ -48,10 +48,10 @@ class ForcedLayout extends React.Component {
             const invalidChildren = document.nodes.filter((child, index) => child.type === 'title' && index !== 0)
             return invalidChildren.size ? invalidChildren : null
           },
-          normalize: (change, document, invalidChildren) => {
-            let updatedTransform = change
+          normalize: (transform, document, invalidChildren) => {
+            let updatedTransform = transform
             invalidChildren.forEach((child) => {
-              updatedTransform = change.setNodeByKey(child.key, 'paragraph')
+              updatedTransform = transform.setNodeByKey(child.key, 'paragraph')
             })
 
             return updatedTransform
@@ -63,22 +63,22 @@ class ForcedLayout extends React.Component {
         {
           match: node => node.kind === 'document',
           validate: document => document.nodes.size < 2 ? true : null,
-          normalize: (change, document) => {
+          normalize: (transform, document) => {
             const paragraph = Block.create({ type: 'paragraph', data: {}})
-            return change.insertNodeByKey(document.key, 1, paragraph)
+            return transform.insertNodeByKey(document.key, 1, paragraph)
           }
         }
       ]
     }
-  }
+  };
 
   /**
    * On change.
    *
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onChange = ({ state }) => {
+  onChange = (state) => {
     this.setState({ state })
   }
 

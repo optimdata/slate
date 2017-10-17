@@ -1,5 +1,5 @@
 
-import { Editor, State } from '../..'
+import { Editor, Raw } from '../..'
 import Frame from 'react-frame-component'
 import React from 'react'
 import initialState from './state.json'
@@ -53,8 +53,8 @@ class Iframes extends React.Component {
    */
 
   state = {
-    state: State.fromJSON(initialState)
-  }
+    state: Raw.deserialize(initialState, { terse: true })
+  };
 
   /**
    * Check if the current selection has a mark with `type` in it.
@@ -65,7 +65,7 @@ class Iframes extends React.Component {
 
   hasMark = (type) => {
     const { state } = this.state
-    return state.activeMarks.some(mark => mark.type == type)
+    return state.marks.some(mark => mark.type == type)
   }
 
   /**
@@ -81,12 +81,12 @@ class Iframes extends React.Component {
   }
 
   /**
-   * On change.
+   * On change, save the new state.
    *
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onChange = ({ state }) => {
+  onChange = (state) => {
     this.setState({ state })
   }
 
@@ -95,11 +95,11 @@ class Iframes extends React.Component {
    *
    * @param {Event} e
    * @param {Object} data
-   * @param {Change} change
+   * @param {State} state
    * @return {State}
    */
 
-  onKeyDown = (e, data, change) => {
+  onKeyDown = (e, data, state) => {
     if (!data.isMod) return
     let mark
 
@@ -114,8 +114,13 @@ class Iframes extends React.Component {
         return
     }
 
+    state = state
+      .transform()
+      .toggleMark(mark)
+      .apply()
+
     e.preventDefault()
-    return change.toggleMark(mark)
+    return state
   }
 
   /**
@@ -127,10 +132,14 @@ class Iframes extends React.Component {
 
   onClickMark = (e, type) => {
     e.preventDefault()
-    const change = this.state.state
-      .change()
+    let { state } = this.state
+
+    state = state
+      .transform()
       .toggleMark(type)
-    this.onChange(change)
+      .apply()
+
+    this.setState({ state })
   }
 
   /**
@@ -142,11 +151,15 @@ class Iframes extends React.Component {
 
   onClickBlock = (e, type) => {
     e.preventDefault()
+    let { state } = this.state
     const isActive = this.hasBlock(type)
-    const change = this.state.state
-      .change()
+
+    state = state
+      .transform()
       .setBlock(isActive ? DEFAULT_NODE : type)
-    this.onChange(change)
+      .apply()
+
+    this.setState({ state })
   }
 
   /**

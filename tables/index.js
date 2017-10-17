@@ -1,5 +1,5 @@
 
-import { Editor, State } from '../..'
+import { Editor, Raw } from '../..'
 import React from 'react'
 import initialState from './state.json'
 
@@ -35,30 +35,30 @@ class Tables extends React.Component {
    */
 
   state = {
-    state: State.fromJSON(initialState)
+    state: Raw.deserialize(initialState, { terse: true })
   };
 
   /**
    * On backspace, do nothing if at the start of a table cell.
    *
    * @param {Event} e
-   * @param {Change} change
+   * @param {State} state
+   * @return {State or Null} state
    */
 
-  onBackspace = (e, change) => {
-    const { state } = change
+  onBackspace = (e, state) => {
     if (state.startOffset != 0) return
     e.preventDefault()
-    return true
+    return state
   }
 
   /**
    * On change.
    *
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onChange = ({ state }) => {
+  onChange = (state) => {
     this.setState({ state })
   }
 
@@ -66,26 +66,27 @@ class Tables extends React.Component {
    * On delete, do nothing if at the end of a table cell.
    *
    * @param {Event} e
-   * @param {Change} change
+   * @param {State} state
+   * @return {State or Null} state
    */
 
-  onDelete = (e, change) => {
-    const { state } = change
-    if (state.endOffset != state.startText.text.length) return
+  onDelete = (e, state) => {
+    if (state.endOffset != state.startText.length) return
     e.preventDefault()
-    return true
+    return state
   }
 
   /**
    * On return, do nothing if inside a table cell.
    *
    * @param {Event} e
-   * @param {Change} change
+   * @param {State} state
+   * @return {State or Null} state
    */
 
-  onEnter = (e, change) => {
+  onEnter = (e, state) => {
     e.preventDefault()
-    return true
+    return state
   }
 
   /**
@@ -93,11 +94,11 @@ class Tables extends React.Component {
    *
    * @param {Event} e
    * @param {Object} data
-   * @param {Change} change
+   * @param {State} state
+   * @return {State or Null} state
    */
 
-  onKeyDown = (e, data, change) => {
-    const { state } = change
+  onKeyDown = (e, data, state) => {
     const { document, selection } = state
     const { startKey } = selection
     const startNode = document.getDescendant(startKey)
@@ -108,14 +109,11 @@ class Tables extends React.Component {
 
       if (prevBlock.type == 'table-cell') {
         e.preventDefault()
-        return true
+        return state
       }
     }
 
-    if (state.startBlock.type != 'table-cell') {
-      return
-    }
-
+    if (state.startBlock.type != 'table-cell') return
     switch (data.key) {
       case 'backspace': return this.onBackspace(e, state)
       case 'delete': return this.onDelete(e, state)

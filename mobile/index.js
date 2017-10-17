@@ -1,5 +1,5 @@
 
-import { Editor, State } from '../..'
+import { Editor, Raw } from '../..'
 import React from 'react'
 import initialState from './state.json'
 
@@ -48,30 +48,25 @@ class SimpleEditable extends React.Component {
   shouldComponentUpdate = () => false
 
   render = () => (
-    <div>
-      <h4>HTML with content editable</h4>
-      <div
-        contentEditable
-        onSelect={this.props.logger.logEvent('onSelect')}
-        onBeforeInput={this.props.logger.logEvent('onBeforeInput')}
-        onInput={this.props.logger.logEvent('onInput')}
-        onCompositionStart={this.props.logger.logEvent('onCompositionStart')}
-        onCompositionUpdate={this.props.logger.logEvent('onCompositionUpdate')}
-        onCompositionEnd={this.props.logger.logEvent('onCompositionEnd')}
-        onChange={this.props.logger.logEvent('onChange')}
-        onKeyDown={this.props.logger.logEvent('onKeyDown')}
-        onKeyUp={this.props.logger.logEvent('onKeyUp')}
-        onBlur={this.props.logger.logEvent('onBlur')}
-        onFocus={this.props.logger.logEvent('onFocus')}
-        style={{
-          backgroundColor: 'gold',
-          padding: '1em',
-          margin: '0 0 1em 0',
-        }}
-      >
-        Hello
-      </div>
-    </div>
+    <div
+      contentEditable
+      onSelect={this.props.logger.logEvent('onSelect')}
+      onBeforeInput={this.props.logger.logEvent('onBeforeInput')}
+      onInput={this.props.logger.logEvent('onInput')}
+      onCompositionStart={this.props.logger.logEvent('onCompositionStart')}
+      onCompositionUpdate={this.props.logger.logEvent('onCompositionUpdate')}
+      onCompositionEnd={this.props.logger.logEvent('onCompositionEnd')}
+      onChange={this.props.logger.logEvent('onChange')}
+      onKeyDown={this.props.logger.logEvent('onKeyDown')}
+      onKeyUp={this.props.logger.logEvent('onKeyUp')}
+      onBlur={this.props.logger.logEvent('onBlur')}
+      onFocus={this.props.logger.logEvent('onFocus')}
+      style={{
+        backgroundColor: 'gold',
+        padding: '1em',
+        margin: '1em 0',
+      }}
+    />
   )
 
 }
@@ -89,11 +84,11 @@ export default class EventLogger extends React.Component {
   logStateUpdate = state =>
     this.setState({
       data: this.data = [
+        ...this.data,
         {
           listener: 'onUpdate',
           state,
-        },
-        ...this.data,
+        }
       ],
     })
 
@@ -101,6 +96,7 @@ export default class EventLogger extends React.Component {
     const { anchorOffset, focusOffset } = window.getSelection()
     this.setState({
       data: this.data = [
+        ...this.data,
         {
           listener,
           html: event.target.innerHTML,
@@ -116,8 +112,7 @@ export default class EventLogger extends React.Component {
           },
           key: event.key,
           keyCode: event.keyCode,
-        },
-        ...this.data,
+        }
       ]
     })
   }
@@ -138,10 +133,6 @@ export default class EventLogger extends React.Component {
     return (
       <div className="editor">
         <style type="text/css">{`
-          h4 {
-            margin-bottom: 0px;
-          }
-
           .example {
             max-width: none;
           }
@@ -177,24 +168,12 @@ export default class EventLogger extends React.Component {
           td.no {
 
           }
-
-          div.debugger-toolbar {
-            margin-bottom: 12px;
-          }
-
-          div.debugger-toolbar button {
-            font-size: 16px;
-          }
         `}</style>
         <RichText logger={this} />
         <SimpleEditable logger={this} />
-        <div className="debugger-toolbar">
-          <button onClick={this.reset}>Reset table</button>
-          {' '}
-          <button onClick={this.toggleTable}>{ this.state.showTable ? 'Hide table' : 'Show table' }</button>
-          {' '}
-          <button onClick={this.toggleOnlyLast}>{ this.state.onlyLast ? 'Show all rows' : 'Show only last 3 rows' }</button>
-        </div>
+        <button onClick={this.reset}>Reset</button>
+        <button onClick={this.toggleTable}>{ this.state.showTable ? 'Hide table' : 'Show table' }</button>
+        <button onClick={this.toggleOnlyLast}>{ this.state.onlyLast ? 'Show all rows' : 'Show only last rows' }</button>
         {
           !this.state.showTable ? null :
             <DebugTable data={this.data} onlyLast={this.state.onlyLast} />
@@ -210,7 +189,6 @@ function DebugTable({ data, onlyLast }) {
     <table style={{ width: '100%' }}>
       <thead>
         <tr>
-          <th />
           <th colSpan={3}>Composition</th>
           <th colSpan={2}>Input</th>
           <th colSpan={3}>Select</th>
@@ -222,7 +200,6 @@ function DebugTable({ data, onlyLast }) {
           <th colSpan={2}>Key</th>
         </tr>
         <tr>
-          <th />
           <th>Start</th>
           <th>Update</th>
           <th>End</th>
@@ -245,25 +222,21 @@ function DebugTable({ data, onlyLast }) {
         </tr>
       </thead>
       <tbody>
-        { (onlyLast ? data.slice(0, 3) : data).map((item, key) => <DebugRow item={item} key={key} index={data.length - key} />) }
+        { (onlyLast ? data.slice(data.length - 1) : data).map((item, key) => <DebugRow item={item} key={key} />) }
       </tbody>
     </table>
   )
 }
 
-function DebugRow({ item, index }) {
+function DebugRow({ item }) {
   const { listener, data, type, text, html, selection, key, keyCode } = item
 
   return (
     listener === 'onUpdate' ?
       (
-        <tr>
-          <td>{index}</td>
-          <td className="stateChange" colSpan={19}>State change</td>
-        </tr>
+        <tr><td className="stateChange" colSpan={19}>State change</td></tr>
       ) : (
         <tr>
-          <td>{index}</td>
           <td className={listener === 'onCompositionStart' ? 'yes' : 'no'} />
           <td className={listener === 'onCompositionUpdate' ? 'yes' : 'no'} />
           <td className={listener === 'onCompositionEnd' ? 'yes' : 'no'} />
@@ -275,9 +248,7 @@ function DebugRow({ item, index }) {
           <td className={listener === 'onKeyDown' ? 'yes' : 'no-alternate'} />
           <td className={listener === 'onKeyUp' ? 'yes' : 'no-alternate'} />
           <td>{ type }</td>
-          <td>{
-            data == null ? null : (<pre>{ data }</pre>)
-          }</td>
+          <td><pre>{ data }</pre></td>
           <td>
             { !text ? null : text.slice(0, selection.begin) }
             { !text ? null : <span className="selection">{text.slice(selection.begin, selection.end)}</span> }
@@ -310,8 +281,8 @@ class RichText extends React.Component {
    */
 
   state = {
-    state: State.fromJSON(initialState),
-  }
+    state: Raw.deserialize(initialState, { terse: true })
+  };
 
   /**
    * Check if the current selection has a mark with `type` in it.
@@ -322,7 +293,7 @@ class RichText extends React.Component {
 
   hasMark = (type) => {
     const { state } = this.state
-    return state.activeMarks.some(mark => mark.type == type)
+    return state.marks.some(mark => mark.type == type)
   }
 
   /**
@@ -338,12 +309,12 @@ class RichText extends React.Component {
   }
 
   /**
-   * On change, save the new `state`.
+   * On change, save the new state.
    *
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onChange = ({ state }) => {
+  onChange = (state) => {
     this.props.logger.logStateUpdate(state)
     this.setState({ state })
   }
@@ -353,12 +324,11 @@ class RichText extends React.Component {
    *
    * @param {Event} e
    * @param {Object} data
-   * @param {Change} change
-   * @return {Change}
+   * @param {State} state
+   * @return {State}
    */
 
-  onKeyDown = (e, data, change) => {
-    this.props.logger.logEvent('onKeyDown')(e)
+  onKeyDown = (e, data, state) => {
     if (!data.isMod) return
     let mark
 
@@ -379,9 +349,13 @@ class RichText extends React.Component {
         return
     }
 
+    state = state
+      .transform()
+      .toggleMark(mark)
+      .apply()
+
     e.preventDefault()
-    change.toggleMark(mark)
-    return true
+    return state
   }
 
   /**
@@ -393,9 +367,14 @@ class RichText extends React.Component {
 
   onClickMark = (e, type) => {
     e.preventDefault()
-    const { state } = this.state
-    const change = state.change().toggleMark(type)
-    this.onChange(change)
+    let { state } = this.state
+
+    state = state
+      .transform()
+      .toggleMark(type)
+      .apply()
+
+    this.setState({ state })
   }
 
   /**
@@ -407,8 +386,8 @@ class RichText extends React.Component {
 
   onClickBlock = (e, type) => {
     e.preventDefault()
-    const { state } = this.state
-    const change = state.change()
+    let { state } = this.state
+    const transform = state.transform()
     const { document } = state
 
     // Handle everything but list buttons.
@@ -417,14 +396,14 @@ class RichText extends React.Component {
       const isList = this.hasBlock('list-item')
 
       if (isList) {
-        change
+        transform
           .setBlock(isActive ? DEFAULT_NODE : type)
           .unwrapBlock('bulleted-list')
           .unwrapBlock('numbered-list')
       }
 
       else {
-        change
+        transform
           .setBlock(isActive ? DEFAULT_NODE : type)
       }
     }
@@ -437,22 +416,23 @@ class RichText extends React.Component {
       })
 
       if (isList && isType) {
-        change
+        transform
           .setBlock(DEFAULT_NODE)
           .unwrapBlock('bulleted-list')
           .unwrapBlock('numbered-list')
       } else if (isList) {
-        change
+        transform
           .unwrapBlock(type == 'bulleted-list' ? 'numbered-list' : 'bulleted-list')
           .wrapBlock(type)
       } else {
-        change
+        transform
           .setBlock('list-item')
           .wrapBlock(type)
       }
     }
 
-    this.onChange(change)
+    state = transform.apply()
+    this.setState({ state })
   }
 
   /**
@@ -461,7 +441,7 @@ class RichText extends React.Component {
    * @return {Element}
    */
 
-  render() {
+  render = () => {
     return (
       <div>
         {this.renderToolbar()}
@@ -539,18 +519,11 @@ class RichText extends React.Component {
   renderEditor = () => {
     const style = {
       padding: '1em',
-      border: '1px solid black',
-    }
-    const editorStyle = {
-      ...style,
-      backgroundColor: 'gold',
     }
     const { logger: { logEvent }} = this.props
     return (
-      <div>
-        <h4>Text editor</h4>
         <Editor
-          style={editorStyle}
+          style={style}
           spellCheck={false}
           schema={schema}
           state={this.state.state}
@@ -561,16 +534,11 @@ class RichText extends React.Component {
           onCompositionStart={logEvent('onCompositionStart')}
           onCompositionUpdate={logEvent('onCompositionUpdate')}
           onCompositionEnd={logEvent('onCompositionEnd')}
-          onKeyDown={this.onKeyDown}
+          onKeyDown={logEvent('onKeyDown')}
           onKeyUp={logEvent('onKeyUp')}
           onBlur={logEvent('onBlur')}
           onFocus={logEvent('onFocus')}
         />
-        <h4>State content</h4>
-        <div style={style}>
-          {this.state.state.document.text}
-        </div>
-      </div>
     )
   }
 

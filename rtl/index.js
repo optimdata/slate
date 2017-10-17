@@ -1,5 +1,5 @@
 
-import { Editor, State } from '../..'
+import { Editor, Raw } from '../..'
 import React from 'react'
 import initialState from './state.json'
 
@@ -30,16 +30,16 @@ class PlainText extends React.Component {
    */
 
   state = {
-    state: State.fromJSON(initialState)
-  }
+    state: Raw.deserialize(initialState, { terse: true })
+  };
 
   /**
    * On change.
    *
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onChange = ({ state }) => {
+  onChange = (state) => {
     this.setState({ state })
   }
 
@@ -48,14 +48,15 @@ class PlainText extends React.Component {
    *
    * @param {Event} e
    * @param {Object} data
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onKeyDown = (e, data, change) => {
+  onKeyDown = (e, data, state) => {
     if (data.key == 'enter' && data.isShift) {
-      e.preventDefault()
-      change.insertText('\n')
-      return true
+      return state
+        .transform()
+        .insertText('\n')
+        .apply()
     }
   }
 

@@ -1,5 +1,5 @@
 
-import { Editor, State } from '../../..'
+import { Editor, Raw } from '../../..'
 import React from 'react'
 import initialState from './state.json'
 
@@ -58,8 +58,8 @@ class RichText extends React.Component {
    */
 
   state = {
-    state: State.fromJSON(initialState)
-  }
+    state: Raw.deserialize(initialState, { terse: true })
+  };
 
   /**
    * Check if the current selection has a mark with `type` in it.
@@ -70,7 +70,7 @@ class RichText extends React.Component {
 
   hasMark = (type) => {
     const { state } = this.state
-    return state.activeMarks.some(mark => mark.type == type)
+    return state.marks.some(mark => mark.type == type)
   }
 
   /**
@@ -88,10 +88,10 @@ class RichText extends React.Component {
   /**
    * On change, save the new state.
    *
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onChange = ({ state }) => {
+  onChange = (state) => {
     this.setState({ state })
   }
 
@@ -100,11 +100,11 @@ class RichText extends React.Component {
    *
    * @param {Event} e
    * @param {Object} data
-   * @param {Change} change
+   * @param {State} state
    * @return {State}
    */
 
-  onKeyDown = (e, data, change) => {
+  onKeyDown = (e, data, state) => {
     if (!data.isMod) return
     let mark
 
@@ -125,9 +125,13 @@ class RichText extends React.Component {
         return
     }
 
-    change[this.hasMark(mark) ? 'removeMark' : 'addMark'](mark)
+    state = state
+      .transform()
+      [this.hasMark(mark) ? 'removeMark' : 'addMark'](mark)
+      .apply()
+
     e.preventDefault()
-    return true
+    return state
   }
 
   /**
@@ -140,12 +144,14 @@ class RichText extends React.Component {
   onClickMark = (e, type) => {
     e.preventDefault()
     const isActive = this.hasMark(type)
-    const change = this.state.state
-      .change()
+    let { state } = this.state
+
+    state = state
+      .transform()
       [isActive ? 'removeMark' : 'addMark'](type)
       .apply()
 
-    this.onChange(change)
+    this.setState({ state })
   }
 
   /**
@@ -158,18 +164,20 @@ class RichText extends React.Component {
   onClickBlock = (e, type) => {
     e.preventDefault()
     const isActive = this.hasBlock(type)
-    const change = this.state.state
-      .change()
+    let { state } = this.state
+
+    const transform = state
+      .transform()
       .setBlock(isActive ? 'paragraph' : type)
 
     // Handle the extra wrapping required for list buttons.
     if (type == 'bulleted-list' || type == 'numbered-list') {
       if (this.hasBlock('list-item')) {
-        change
+        transform
           .setBlock(DEFAULT_NODE)
           .unwrapBlock(type)
       } else {
-        change
+        transform
           .setBlock('list-item')
           .wrapBlock(type)
       }
@@ -177,10 +185,11 @@ class RichText extends React.Component {
 
     // Handle everything but list buttons.
     else {
-      change.setBlock(isActive ? DEFAULT_NODE : type)
+      transform.setBlock(isActive ? DEFAULT_NODE : type)
     }
 
-    this.onChange(change)
+    state = transform.apply()
+    this.setState({ state })
   }
 
   /**

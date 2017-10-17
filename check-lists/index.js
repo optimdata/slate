@@ -1,5 +1,5 @@
 
-import { Editor, State } from '../..'
+import { Editor, Raw } from '../..'
 import React from 'react'
 import initialState from './state.json'
 
@@ -20,7 +20,13 @@ class CheckListItem extends React.Component {
   onChange = (e) => {
     const checked = e.target.checked
     const { editor, node } = this.props
-    editor.change(c => c.setNodeByKey(node.key, { data: { checked }}))
+    const state = editor
+      .getState()
+      .transform()
+      .setNodeByKey(node.key, { data: { checked }})
+      .apply()
+
+    editor.onChange(state)
   }
 
   /**
@@ -35,7 +41,7 @@ class CheckListItem extends React.Component {
     const checked = node.data.get('checked')
     return (
       <div
-        className={`check-list-item ${checked ? 'checked' : ''}`}
+        className="check-list-item"
         contentEditable={false}
         {...attributes}
       >
@@ -82,16 +88,16 @@ class CheckLists extends React.Component {
    */
 
   state = {
-    state: State.fromJSON(initialState)
+    state: Raw.deserialize(initialState, { terse: true })
   }
 
   /**
    * On change, save the new state.
    *
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onChange = ({ state }) => {
+  onChange = (state) => {
     this.setState({ state })
   }
 
@@ -106,20 +112,20 @@ class CheckLists extends React.Component {
    *
    * @param {Event} e
    * @param {Object} data
-   * @param {Change} change
+   * @param {State} state
    * @return {State|Void}
    */
 
-  onKeyDown = (e, data, change) => {
-    const { state } = change
-
+  onKeyDown = (e, data, state) => {
     if (
       data.key == 'enter' &&
       state.startBlock.type == 'check-list-item'
     ) {
-      return change
+      return state
+        .transform()
         .splitBlock()
         .setBlock({ data: { checked: false }})
+        .apply()
     }
 
     if (
@@ -128,8 +134,10 @@ class CheckLists extends React.Component {
       state.startBlock.type == 'check-list-item' &&
       state.selection.startOffset == 0
     ) {
-      return change
+      return state
+        .transform()
         .setBlock('paragraph')
+        .apply()
     }
   }
 

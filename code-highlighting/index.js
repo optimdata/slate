@@ -1,5 +1,5 @@
 
-import { Editor, Mark, State } from '../..'
+import { Editor, Mark, Raw } from '../..'
 import Prism from 'prismjs'
 import React from 'react'
 import initialState from './state.json'
@@ -16,7 +16,16 @@ function CodeBlock(props) {
   const language = node.data.get('language')
 
   function onChange(e) {
-    editor.change(c => c.setNodeByKey(node.key, { data: { language: e.target.value }}))
+    const state = editor.getState()
+    const next = state
+      .transform()
+      .setNodeByKey(node.key, {
+        data: {
+          language: e.target.value
+        }
+      })
+      .apply()
+    editor.onChange(next)
   }
 
   return (
@@ -118,16 +127,16 @@ class CodeHighlighting extends React.Component {
    */
 
   state = {
-    state: State.fromJSON(initialState)
-  }
+    state: Raw.deserialize(initialState, { terse: true })
+  };
 
   /**
    * On change, save the new state.
    *
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onChange = ({ state }) => {
+  onChange = (state) => {
     this.setState({ state })
   }
 
@@ -136,17 +145,20 @@ class CodeHighlighting extends React.Component {
    *
    * @param {Event} e
    * @param {Object} data
-   * @param {Change} change
-   * @return {Change}
+   * @param {State} state
+   * @return {State}
    */
 
-  onKeyDown = (e, data, change) => {
-    const { state } = change
-    const { startBlock } = state
+  onKeyDown = (e, data, state) => {
     if (data.key != 'enter') return
+    const { startBlock } = state
     if (startBlock.type != 'code') return
-    if (state.isExpanded) change.delete()
-    return change.insertText('\n')
+
+    const transform = state.transform()
+    if (state.isExpanded) transform.delete()
+    transform.insertText('\n')
+
+    return transform.apply()
   }
 
   /**

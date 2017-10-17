@@ -1,20 +1,18 @@
 {
-  "document": {
-    "nodes": [
-      {
-        "kind": "block",
-        "type": "paragraph",
-        "nodes": [
-          {
-            "kind": "text",
-            "ranges": [
-              {
-                "text": "Hello"
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }
+  "nodes": [
+    {
+      "kind": "block",
+      "type": "paragraph",
+      "nodes": [
+        {
+          "kind": "text",
+          "ranges": [
+            {
+              "text": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

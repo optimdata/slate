@@ -19,15 +19,15 @@ class PlainText extends React.Component {
 
   state = {
     state: Plain.deserialize(initialState)
-  }
+  };
 
   /**
    * On change.
    *
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onChange = ({ state }) => {
+  onChange = (state) => {
     this.setState({ state })
   }
 

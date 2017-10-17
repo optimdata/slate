@@ -18,15 +18,15 @@ class PlainText extends React.Component {
 
   state = {
     state: Plain.deserialize('This is editable plain text, just like a <textarea>!')
-  }
+  };
 
   /**
    * On change.
    *
-   * @param {Change} change
+   * @param {State} state
    */
 
-  onChange = ({ state }) => {
+  onChange = (state) => {
     this.setState({ state })
   }
 
