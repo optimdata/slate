@@ -984,8 +984,8 @@ class Content extends React.Component {
         onKeyUp={this.onKeyUp}
         onPaste={this.onPaste}
         onSelect={this.onSelect}
-        autoCorrect={props.autoCorrect}
-        spellCheck={spellCheck}
+        autoCorrect={props.autoCorrect ? 'on' : 'off'}
+        spellCheck={spellCheck ? 'true' : 'false'}
         style={style}
         role={readOnly ? null : (role || 'textbox')}
         tabIndex={tabIndex}
