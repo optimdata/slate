@@ -64,7 +64,7 @@ class Editor extends React.Component {
    */
 
   static propTypes = {
-    autoCorrect: Types.bool,
+    autoCorrect: Types.string,
     autoFocus: Types.bool,
     className: Types.string,
     onBeforeChange: Types.func,
