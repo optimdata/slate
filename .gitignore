@@ -7,6 +7,7 @@ lib
 # Temporary files.
 bench/output
 tmp
+.DS_Store
 
 # Gitbook files.
 _book
