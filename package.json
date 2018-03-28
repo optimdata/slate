@@ -2,7 +2,7 @@
   "name": "@davidbonnet/slate",
   "private": false,
   "description": "A completely customizable framework for building rich text editors.",
-  "version": "0.21.4-patch.3",
+  "version": "0.21.4-patch.4",
   "license": "MIT",
   "repository": "git://github.com/optimdata/slate.git",
   "main": "./lib/index.js",
